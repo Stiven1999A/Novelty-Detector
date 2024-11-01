@@ -1,46 +1,52 @@
-"""main.py"""
-import os
-import psycopg2
+"""DETECTOR-DE-NOVEDADES/main.py"""
+import pyodbc
 from dotenv import load_dotenv
-from scripts.insertingdata import fetch_new_data, update_database
-from database.connection import connect_to_db
-from database.dataframe_utils import label_atypical_consumptions
+from scripts.insertingdata import check_tables_exist, fetch_new_data, update_database
+from scripts.forecasting import predictions_orchestrator
+from database_tools.connections import connect_to_insert_data, connect_to_fetch_data, connect_to_insert_forecasting_data
 
 load_dotenv()
 
 def main():
     """
-    Main function to connect to the database, fetch new data, update the database, 
-    label atypical consumptions, and print the labeled data.
+    Main function to update consumption data and execute forecasting.
+
+    This function performs the following steps:
+    1. Creates connections to the databases for inserting data, fetching data, and inserting forecasting data.
+    2. Updates the consumption data by checking if the necessary tables exist, fetching new data, and updating the database.
+    3. Executes the forecasting process using the updated data.
+
+    If a database or file error occurs, it catches the exception and prints an error message.
+
+    Finally, it ensures that all database connections are closed.
+
+    Raises:
+        pyodbc.DatabaseError: If a database error occurs.
+        FileNotFoundError: If a file-related error occurs.
     """
-    db_name = os.getenv('DB_NAME')
-    user = os.getenv('DB_USER')
-    password = os.getenv('DB_PASSWORD')
-    host = os.getenv('DB_HOST')
-    port = os.getenv('DB_PORT')
-
     try:
-        conn = connect_to_db(db_name, user, password, host, port)
-        cursor = conn.cursor()
-        cursor.execute('SELECT COUNT(*) FROM public."Fechas"')
-        count = cursor.fetchone()[0]
-
-        file_path = (
-            "C:\\Users\\Estiben\\OneDrive\\Escritorio\\aprendizaje\\Input\\data.csv"
-            if count == 0 else
-            "C:\\Users\\Estiben\\OneDrive\\Escritorio\\aprendizaje\\Input\\data_16_20_oct.csv"
-        )
-
-        new_data = fetch_new_data(file_path)
-        updated_data = update_database(conn, new_data)
-        labeled_data = label_atypical_consumptions(conn, updated_data)
-        print(labeled_data)
-
-    except (psycopg2.DatabaseError, FileNotFoundError) as e:
+        #Create connections to the database
+        print("Updating Consumption Data...")
+        conn_insert = connect_to_insert_data()
+        conn_fetch = connect_to_fetch_data()
+        conn_insert_predictions = connect_to_insert_forecasting_data()
+        #Updating Consumption Data
+        check_tables_exist(conn_insert)
+        new_data = fetch_new_data(conn_insert, conn_fetch)
+        updated_data = update_database(conn_insert, new_data)
+        print("Data updated successfully")
+        print("")
+        #Forecasting Data
+        print("Executing Forecasting...")
+        predictions_orchestrator(conn_insert, conn_insert_predictions)
+        print("Forecasting executed successfully")
+    except (pyodbc.DatabaseError, FileNotFoundError) as e:
         print(f"A database or file error occurred: {e}")
+
     finally:
-        if conn:
-            conn.close()
+        conn_insert.close()
+        conn_fetch.close()
+        conn_insert_predictions.close()
 
 if __name__ == "__main__":
     main()

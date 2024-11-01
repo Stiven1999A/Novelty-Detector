@@ -1,30 +1,95 @@
-"""script/insertingdata.py"""
+"""DETECTOR-DE-NOVEDADES/script/insertingdata.py"""
 import pandas as pd
-from database.dataframe_utils import (
+from database_tools.create_tables import create_tables
+from database_tools.delete_tables import delete_tables
+from database_tools.update_tables import (
     update_processes,
     update_groups,
     update_procesos_grupos,
     update_fechas,
     add_day_of_week_id,
-    filter_existing_rows
+    filter_existing_rows,
+    label_atypical_consumptions
 )
+def check_tables_exist(conn):
+    """
+    Checks if tables exist in the specified database schema and catalog.
 
-def fetch_new_data(file_path):
-    """
-    Reads a CSV file, processes the data, and returns a DataFrame with additional transformations.
-    
+    This function queries the information schema to determine if any tables
+    exist within the 'dbo' schema of the 'Consumos-PrediccionesMIPS' catalog.
+    If no tables are found, it calls the `create_tables` function to create them.
+
     Args:
-        file_path (str): Path to the CSV file.
-    
+        conn (pyodbc.Connection): A connection object to the database.
+
     Returns:
-        pd.DataFrame: The processed DataFrame with the 'IdDiaSemana' column added.
+        str: A message indicating whether the tables exist or not.
     """
-    df = pd.read_csv(file_path, sep='|')
-    df['Fecha'] = pd.to_datetime(df['Fecha'])
-    df = df.drop(df.columns[0], axis=1)
-    df = df.sort_values(['Fecha', 'NombreProceso'], ascending=True)
-    df = df.reset_index(drop=True)
-    df = add_day_of_week_id(df)
+    print("Checking if tables exist...")
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT COUNT(*)
+        FROM information_schema.tables
+        WHERE table_schema = 'dbo' AND table_catalog = 'Consumos-PrediccionesMIPS';
+    """)
+    count = cursor.fetchone()[0]
+    cursor.close()
+    conn.commit()
+    print(f"{count} tables exist." if count > 0 else "Tables do not exist.")
+    if count == 0:
+        print("Tables do not exist.")
+        create_tables(conn)
+    elif count == 10:
+        print("Tables are already created.")
+    else:
+        print("Some tables are missing.")
+        delete_tables(conn)
+        create_tables(conn)
+
+def fetch_new_data(conn_insert, conn_fetch):
+    """
+    Fetches new data from the specified SQL Server database using the fetch connection,
+    and processes it using the insert connection.
+
+    Args:
+        conn_insert: A connection object to the database for inserting data.
+        conn_fetch: A connection object to the database for fetching data.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the results of the executed SQL query.
+    """
+    print("Fetching new data...")
+    # Query to determine if any data exists in the 'Fechas' table
+    cursor = conn_insert.cursor()
+    cursor.execute('SELECT COUNT(*) FROM dbo.Fechas')
+    count = cursor.fetchone()[0]
+    cursor.close()
+
+    if count == 0:
+        #query = ("""SELECT * FROM dbo.refrescarprocesos_10dias WHERE Fecha >= '2023-01-01';""")
+        query = (
+            """SELECT * FROM dbo.refrescarprocesos_10dias WHERE Fecha BETWEEN '2023-06-01' AND '2024-09-30';"""
+        )
+
+    else:
+        #cursor = conn_insert.cursor()
+        #cursor.execute('SELECT MAX(IdFecha) FROM dbo.ConsumosMIPS')
+        #last_id_fecha = cursor.fetchone()[0]
+        #cursor.execute(f'SELECT Fecha FROM dbo.Fechas WHERE IdFecha = {last_id_fecha}')
+        #last_date = cursor.fetchone()[0]
+        #cursor.close()
+
+        #query = (f"""SELECT * FROM dbo.refrescarprocesos_10dias WHERE Fecha > '{last_date}';""")
+        query = (
+            """SELECT * FROM dbo.refrescarprocesos_10dias WHERE Fecha BETWEEN '2024-10-01' AND '2024-10-02';"""
+        )
+
+    df = pd.read_sql(query, conn_fetch)
+    
+    if df.empty:
+        print("Data is already updated with the last data available.")
+        return df
+    
     return df
 
 def update_database(conn, df):
@@ -38,9 +103,15 @@ def update_database(conn, df):
     Returns:
         pd.DataFrame: A DataFrame with the updated data.
     """
+    if df.empty:
+        return df
+    
+    df = add_day_of_week_id(df)
     df = update_processes(conn, df)
     df = update_groups(conn, df)
     df = update_fechas(conn, df)
     update_procesos_grupos(conn, df)
     df = filter_existing_rows(df, conn)
+    df = label_atypical_consumptions(conn, df)
+    
     return df
