@@ -107,15 +107,11 @@ def create_tables(conn):
     cursor.execute("""
     CREATE TABLE PrediccionesMIPS (
         IdPrediccion INT PRIMARY KEY,
-        IdProceso INT,
-        IdGrupo INT,
         IdFecha INT,
         IdDiaSemana INT,
         Prediccion FLOAT,
         LimInf FLOAT,
         LimSup FLOAT,
-        FOREIGN KEY (IdProceso) REFERENCES Procesos(IdProceso),
-        FOREIGN KEY (IdGrupo) REFERENCES Grupos(IdGrupo),
         FOREIGN KEY (IdFecha) REFERENCES Fechas(IdFecha),
         FOREIGN KEY (IdDiaSemana) REFERENCES DiaSemana(IdDiaSemana)
     )

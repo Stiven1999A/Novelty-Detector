@@ -1,9 +1,18 @@
 """DETECTOR-DE-NOVEDADES/main.py"""
 import pyodbc
+import time
 from dotenv import load_dotenv
-from scripts.insertingdata import check_tables_exist, fetch_new_data, update_database
+from scripts.insertingdata import (
+    check_tables_exist,
+    fetch_new_data,
+    update_database
+)
 from scripts.forecasting import predictions_orchestrator
-from database_tools.connections import connect_to_insert_data, connect_to_fetch_data, connect_to_insert_forecasting_data
+from database_tools.connections import (
+    connect_to_insert_data, 
+    connect_to_fetch_data, 
+    connect_to_insert_forecasting_data
+)
 
 load_dotenv()
 
@@ -24,29 +33,37 @@ def main():
         pyodbc.DatabaseError: If a database error occurs.
         FileNotFoundError: If a file-related error occurs.
     """
-    try:
-        #Create connections to the database
-        print("Updating Consumption Data...")
-        conn_insert = connect_to_insert_data()
-        conn_fetch = connect_to_fetch_data()
-        conn_insert_predictions = connect_to_insert_forecasting_data()
-        #Updating Consumption Data
-        check_tables_exist(conn_insert)
-        new_data = fetch_new_data(conn_insert, conn_fetch)
-        updated_data = update_database(conn_insert, new_data)
-        print("Data updated successfully")
-        print("")
-        #Forecasting Data
-        print("Executing Forecasting...")
-        predictions_orchestrator(conn_insert, conn_insert_predictions)
-        print("Forecasting executed successfully")
-    except (pyodbc.DatabaseError, FileNotFoundError) as e:
-        print(f"A database or file error occurred: {e}")
+    while True:
+        try:
+            print("Updating Consumption Data...")
+            conn_insert = connect_to_insert_data()
+            conn_fetch = connect_to_fetch_data()
+            conn_insert_predictions = connect_to_insert_forecasting_data()
+            check_tables_exist(conn_insert)
+            new_data = fetch_new_data(conn_insert, conn_fetch)
+            updated_data = update_database(conn_insert, new_data)
 
-    finally:
-        conn_insert.close()
-        conn_fetch.close()
-        conn_insert_predictions.close()
+            if updated_data.empty:
+                print("No new data to update")
+                break
+
+            print("Data updated successfully")
+            print("")
+            print("Executing Forecasting...")
+            predictions_orchestrator(conn_insert, conn_insert_predictions)
+            print("Forecasting executed successfully")
+            break
+        except (pyodbc.DatabaseError, FileNotFoundError) as e:
+            print(f"A database or file error occurred: {e}")
+            print("Retrying in 5 seconds...")
+            time.sleep(5)
+        finally:
+            try:
+                conn_insert.close()
+                conn_fetch.close()
+                conn_insert_predictions.close()
+            except NameError:
+                pass
 
 if __name__ == "__main__":
     main()

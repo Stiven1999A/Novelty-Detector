@@ -1,6 +1,7 @@
 """DETECTOR-DE-NOVEDADES/database/dataframe_utils.py"""
 import pandas as pd
 import numpy as np
+import time
 
 def update_processes(conn, df):
     """Update processes in the database and update the input DataFrame with process IDs.
@@ -20,43 +21,39 @@ def update_processes(conn, df):
     nombres_proceso_unicos = df['NombreProceso'].unique()
     new_processes = [proc for proc in nombres_proceso_unicos if proc not in existing_processes_dict]
 
-    # Use a temporary table for faster batch insertion
-    cursor.execute("""
-        CREATE TABLE #TempProcesos (
-            IdProceso INT,
-            NombreProceso NVARCHAR(255)
-        )
-    """)
+    if new_processes:
+        cursor.execute("""
+            CREATE TABLE #TempProcesos (
+                IdProceso INT,
+                NombreProceso NVARCHAR(255)
+            )
+        """)
 
-    # Prepare data for batch insertion
-    data_to_insert = [
-        (len(existing_processes_dict) + i + 1, proc)
-        for i, proc in enumerate(new_processes)
-    ]
+        data_to_insert = [
+            (len(existing_processes_dict) + i + 1, proc)
+            for i, proc in enumerate(new_processes)
+        ]
 
-    # Insert data into the temporary table
-    cursor.executemany("""
-        INSERT INTO #TempProcesos (IdProceso, NombreProceso)
-        VALUES (?, ?)
-    """, data_to_insert)
+        cursor.executemany("""
+            INSERT INTO #TempProcesos (IdProceso, NombreProceso)
+            VALUES (?, ?)
+        """, data_to_insert)
 
-    # Insert into the main table from the temporary table
-    cursor.execute("""
-        INSERT INTO dbo.Procesos (IdProceso, NombreProceso)
-        SELECT t.IdProceso, t.NombreProceso
-        FROM #TempProcesos t
-    """)
+        cursor.execute("""
+            INSERT INTO dbo.Procesos (IdProceso, NombreProceso)
+            SELECT t.IdProceso, t.NombreProceso
+            FROM #TempProcesos t
+        """)
 
-    # Drop the temporary table
-    cursor.execute("DROP TABLE #TempProcesos")
+        cursor.execute("DROP TABLE #TempProcesos")
 
-    conn.commit()
+        conn.commit()
 
-    # Update the existing_processes_dict with new entries
-    for id_proc, proc in data_to_insert:
-        existing_processes_dict[proc] = id_proc
+        for id_proc, proc in data_to_insert:
+            existing_processes_dict[proc] = id_proc
 
     df['IdProceso'] = df['NombreProceso'].map(existing_processes_dict)
+    
     return df
 
 def update_groups(conn, df):
@@ -76,12 +73,15 @@ def update_groups(conn, df):
     existing_groups_dict = {row[1]: row[0] for row in existing_groups}
     nombres_grupo_unicos = df['NombreGrupo'].unique()
     new_groups = [grp for grp in nombres_grupo_unicos if grp not in existing_groups_dict]
-    for grp in new_groups:
-        new_id = len(existing_groups_dict) + 1
-        cursor.execute('INSERT INTO dbo.Grupos (IdGrupo, NombreGrupo) VALUES (?, ?)',
-                       (new_id, grp))
-        existing_groups_dict[grp] = new_id
-    conn.commit()
+
+    if new_groups:
+        for grp in new_groups:
+            new_id = len(existing_groups_dict) + 1
+            cursor.execute('INSERT INTO dbo.Grupos (IdGrupo, NombreGrupo) VALUES (?, ?)',
+                           (new_id, grp))
+            existing_groups_dict[grp] = new_id
+        conn.commit()
+
     df['IdGrupo'] = df['NombreGrupo'].map(existing_groups_dict)
     return df
 
@@ -99,13 +99,11 @@ def update_procesos_grupos(conn, df):
     cursor = conn.cursor()
     df = df.drop_duplicates(subset=['IdProceso', 'IdGrupo'])
 
-    # Prepare a list of tuples for batch insertion
     data_to_insert = [
         (row['IdProceso'], row['IdGrupo'])
         for _, row in df.iterrows()
     ]
 
-    # Use a temporary table for faster batch insertion
     cursor.execute("""
         CREATE TABLE #TempProcesosGrupos (
             IdProceso INT,
@@ -113,13 +111,11 @@ def update_procesos_grupos(conn, df):
         )
     """)
 
-    # Insert data into the temporary table
     cursor.executemany("""
         INSERT INTO #TempProcesosGrupos (IdProceso, IdGrupo)
         VALUES (?, ?)
     """, data_to_insert)
 
-    # Insert into the main table from the temporary table
     cursor.execute("""
         INSERT INTO dbo.ProcesosGrupos (IdProcesoGrupo, IdProceso, IdGrupo)
         SELECT NEXT VALUE FOR proceso_grupo_seq, t.IdProceso, t.IdGrupo
@@ -129,10 +125,9 @@ def update_procesos_grupos(conn, df):
         WHERE pg.IdProceso IS NULL AND pg.IdGrupo IS NULL
     """)
 
-    # Drop the temporary table
     cursor.execute("DROP TABLE #TempProcesosGrupos")
-
     conn.commit()
+
 
 def update_fechas(conn, df):
     """
@@ -151,7 +146,6 @@ def update_fechas(conn, df):
     print("Updating the Fechas table.")
     cursor = conn.cursor()
     unique_dates = list(set(pd.to_datetime(df['Fecha']).dt.date))
-    # Check if the Fechas table is empty
     cursor.execute('SELECT COUNT(*) FROM dbo.Fechas')
 
     if cursor.fetchone()[0] == 0:
@@ -178,7 +172,6 @@ def update_fechas(conn, df):
         existing_dates = cursor.fetchall()
         existing_dates_dict = {row[1]: row[0] for row in existing_dates}
         df['IdFecha'] = pd.to_datetime(df['Fecha']).dt.date.map(existing_dates_dict)
-    #If Fechas table is not empty, update IdFecha in DataFrame and insert next month dates if needed
     else:
         cursor.execute('SELECT IdFecha, Fecha FROM dbo.Fechas')
         existing_dates = cursor.fetchall()
@@ -374,6 +367,13 @@ def label_atypical_consumptions(conn, df):
         )
         for _, row in df.iterrows()
     ]
-    cursor.executemany(insert_query, data_to_insert)
-    conn.commit()
+    
+    start_time = time.time()
+    for i in range(0, len(data_to_insert), 1000):
+        cursor.executemany(insert_query, data_to_insert[i:i+1000])
+        conn.commit()
+        if time.time() - start_time > 600:
+            print("Process is still running...")
+            start_time = time.time()
+
     return df

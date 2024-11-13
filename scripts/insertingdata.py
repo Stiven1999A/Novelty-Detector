@@ -41,10 +41,12 @@ def check_tables_exist(conn):
         create_tables(conn)
     elif count == 10:
         print("Tables are already created.")
-    else:
+    elif count < 10:
         print("Some tables are missing.")
         delete_tables(conn)
         create_tables(conn)
+    else:
+        print("Unexpected number of tables. More than 10 tables exist.")
 
 def fetch_new_data(conn_insert, conn_fetch):
     """
@@ -59,30 +61,19 @@ def fetch_new_data(conn_insert, conn_fetch):
         pd.DataFrame: A DataFrame containing the results of the executed SQL query.
     """
     print("Fetching new data...")
-    # Query to determine if any data exists in the 'Fechas' table
     cursor = conn_insert.cursor()
-    cursor.execute('SELECT COUNT(*) FROM dbo.Fechas')
+    cursor.execute('SELECT COUNT(*) FROM dbo.ConsumosMIPS')
     count = cursor.fetchone()[0]
-    cursor.close()
 
     if count == 0:
-        #query = ("""SELECT * FROM dbo.refrescarprocesos_10dias WHERE Fecha >= '2023-01-01';""")
-        query = (
-            """SELECT * FROM dbo.refrescarprocesos_10dias WHERE Fecha BETWEEN '2023-06-01' AND '2024-09-30';"""
-        )
+        query = ("""SELECT * FROM dbo.refrescarprocesos_10dias WHERE Fecha >= '2023-06-01';""")
 
     else:
-        #cursor = conn_insert.cursor()
-        #cursor.execute('SELECT MAX(IdFecha) FROM dbo.ConsumosMIPS')
-        #last_id_fecha = cursor.fetchone()[0]
-        #cursor.execute(f'SELECT Fecha FROM dbo.Fechas WHERE IdFecha = {last_id_fecha}')
-        #last_date = cursor.fetchone()[0]
-        #cursor.close()
-
-        #query = (f"""SELECT * FROM dbo.refrescarprocesos_10dias WHERE Fecha > '{last_date}';""")
-        query = (
-            """SELECT * FROM dbo.refrescarprocesos_10dias WHERE Fecha BETWEEN '2024-10-01' AND '2024-10-02';"""
-        )
+        cursor.execute('SELECT MAX(IdFecha) FROM dbo.ConsumosMIPS')
+        last_id_fecha = cursor.fetchone()[0]
+        cursor.execute(f'SELECT Fecha FROM dbo.Fechas WHERE IdFecha = {last_id_fecha}')
+        last_date = cursor.fetchone()[0]
+        query = (f"""SELECT * FROM dbo.refrescarprocesos_10dias WHERE Fecha > '{last_date}';""")
 
     df = pd.read_sql(query, conn_fetch)
     

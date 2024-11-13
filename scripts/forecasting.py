@@ -4,6 +4,7 @@ from prophet import Prophet
 from database_tools.update_tables import add_day_of_week_id
 from forecast_tools.metrics import metrics
 from sqlalchemy.exc import OperationalError, PendingRollbackError
+from database_tools.connections import connect_to_insert_forecasting_data, connect_to_insert_data
 
 def parameters(conn):
     """
@@ -65,6 +66,12 @@ def forecast_and_insert(max_id_fecha, conn, engine):
     print("Forecasting and Inserting...")
     cursor = conn.cursor()
     try:
+        cursor.execute("""ALTER SEQUENCE predicciones_seq
+                       RESTART WITH 1
+                       INCREMENT BY 1
+                       MINVALUE 1
+                       MAXVALUE 100000
+                       CYCLE;""")
         print(f"Fetching data from ConsumosMIPS")
         query = f"""
             SELECT IdFecha, SUM(ConsumoMIPS) as ConsumoMIPS FROM dbo.ConsumosMIPS
@@ -85,8 +92,11 @@ def forecast_and_insert(max_id_fecha, conn, engine):
         
         # Preparing the data for the Prophet model
         data['Fecha'] = pd.to_datetime(data['Fecha'], format='%Y-%m-%d')
+        # Sort the data by IdFecha in ascending order
+        data = data.sort_values(by='IdFecha')
+        print(data.tail())
         prophet_df = data[['Fecha', 'ConsumoMIPS']].rename(columns={'Fecha': 'ds', 'ConsumoMIPS': 'y'})
-        print(prophet_df.head())
+        print(prophet_df)
         
         # Fitting the Prophet model
         model = Prophet()
@@ -116,15 +126,30 @@ def forecast_and_insert(max_id_fecha, conn, engine):
         future_dates = future_dates.rename(columns={'ds': 'Fecha'})
         future_dates = add_day_of_week_id(future_dates)
         forecast = forecast.merge(future_dates, on='Fecha', how='left')
-        print(forecast.head())  
         
+        # Add IdPrediccion column using the sequence predicciones_seq
+        forecast['IdPrediccion'] = [cursor.execute("SELECT NEXT VALUE FOR predicciones_seq").fetchone()[0] for _ in range(len(forecast))]
+
+        # Reorder the columns to match the table structure
+        forecast = forecast[['IdPrediccion', 'IdFecha', 'IdDiaSemana', 'Prediccion', 'LimInf', 'LimSup']]
+        print(forecast.head())  
         # Inserting forecast into the database in bulk
         print(f"Inserting forecast into the database")
-        forecast_records = forecast.to_records(index=False)
+        forecast_to_insert = [
+            (
+                int(row['IdPrediccion']),
+                int(row['IdFecha']),
+                int(row['IdDiaSemana']),
+                float(row['Prediccion']),
+                float(row['LimInf']),
+                float(row['LimSup'])
+            )
+            for _, row in forecast.iterrows()
+        ]
         cursor.executemany("""
             INSERT INTO dbo.PrediccionesMIPS (IdPrediccion, IdFecha, IdDiaSemana, Prediccion, LimInf, LimSup)
-            VALUES (NEXT VALUE FOR predicciones_seq, ?, ?, ?, ?, ?)
-        """, forecast_records)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, forecast_to_insert)
         conn.commit()
         print("Forecast inserted successfully")
 
@@ -156,9 +181,6 @@ def calculate_metrics(min_id_fecha, max_id_fecha, conn):
     """"""
     print("Calculating Metrics...")
     cursor = conn.cursor()
-    cursor.execute("SELECT NEXT VALUE FOR metricas_seq")
-    id_metrica = cursor.fetchone()[0]    
-    metric_categories = 2
 
     # Check if the MetricasPredicciones table is empty
     cursor = conn.cursor()
@@ -166,14 +188,19 @@ def calculate_metrics(min_id_fecha, max_id_fecha, conn):
     metrics_count = cursor.fetchone()[0]
 
     if metrics_count == 0:
-
         print("The MetricasPredicciones table is empty.")
+
+        metric_categories = 2
+
         cursor.execute("""ALTER SEQUENCE metricas_seq 
         RESTART WITH 1
         INCREMENT BY 1
         MINVALUE 1
         MAXVALUE 100000
         CYCLE;""")
+
+        cursor.execute("SELECT NEXT VALUE FOR metricas_seq")
+        id_metrica = int(cursor.fetchone()[0])  
 
         n = 1
 
@@ -185,15 +212,16 @@ def calculate_metrics(min_id_fecha, max_id_fecha, conn):
             "sMAPE": 0
         }
 
-        for id_fecha in range(min_id_fecha + 1, max_id_fecha):
+        for id_fecha in range(min_id_fecha + 1, max_id_fecha + 1):
             print(f"Calculating metrics for IdFecha: {id_fecha}")
+            print(f"This is the id_metrica: {id_metrica}")
 
             # Fetch y_true and y_pred
             cursor.execute(f"SELECT SUM(ConsumoMIPS) FROM dbo.ConsumosMIPS WHERE IdFecha = {id_fecha};")
             y_true = cursor.fetchone()[0]
             print(f"y_true: {y_true}")
 
-            cursor.execute(f"SELECT SUM(Prediccion) FROM dbo.PrediccionesMIPS WHERE IdFecha = {id_fecha};")
+            cursor.execute(f"SELECT Prediccion FROM dbo.PrediccionesMIPS WHERE IdFecha = {id_fecha};")
             y_pred = cursor.fetchone()[0]
             print(f"y_pred: {y_pred}")
 
@@ -216,23 +244,29 @@ def calculate_metrics(min_id_fecha, max_id_fecha, conn):
                     float(metrics_result['MAPE']),
                     float(metrics_result['sMAPE'])
                 ))
-                cursor.execute("SELECT NEXT VALUE FOR metricas_seq")
-                id_metrica = cursor.fetchone()[0]
                 conn.commit()
+                if id_fecha < max_id_fecha + 1:
+                    cursor.execute("SELECT NEXT VALUE FOR metricas_seq")
+                    id_metrica = cursor.fetchone()[0]
+                print(id_metrica)
 
             n += 1
             last_metrics = metrics_result
 
     else:
+        print("The MetricasPredicciones table is not empty.")
+        cursor.execute("SELECT NEXT VALUE FOR metricas_seq")
+        id_metrica = int(cursor.fetchone()[0])
+        print(id_metrica)
 
-        print("The MetricasPredicciones table is empty.")
-        for id_fecha in range(min_id_fecha, max_id_fecha + 1):
+        for id_fecha in range(min_id_fecha + 1, max_id_fecha + 1):
 
             cursor.execute(f"""
                            SELECT MONTH(Fecha), DAY(Fecha) FROM dbo.Fechas
                            WHERE IdFecha BETWEEN {id_fecha - 1} AND {id_fecha};
                            """)
             month_day = cursor.fetchall()
+            print(month_day)
 
             if month_day[0][0] != month_day[1][0]:
                 n = 1
@@ -271,15 +305,16 @@ def calculate_metrics(min_id_fecha, max_id_fecha, conn):
                     float(metrics_result['sMAPE'])
                 ))
                 conn.commit()
-
-                cursor.execute("SELECT NEXT VALUE FOR metricas_seq")
-                id_metrica = cursor.fetchone()[0]
-            
+                
+                if id_fecha < max_id_fecha + 1:
+                    cursor.execute("SELECT NEXT VALUE FOR metricas_seq")
+                    id_metrica = cursor.fetchone()[0]
+                
             else:
                 # We must find the last n value
                 n = int(month_day[1][1])
 
-                cursor.execute(f"""SELECT FROM dbo.MetricasPredicciones
+                cursor.execute(f"""SELECT * FROM dbo.MetricasPredicciones
                                WHERE IdFecha = {id_fecha - 1}
                                AND IdCategoriaMetrica = 0;
                                """)
@@ -320,20 +355,19 @@ def calculate_metrics(min_id_fecha, max_id_fecha, conn):
                     float(metrics_result['sMAPE'])
                 ))
                 conn.commit()
-                    
-                cursor.execute("SELECT NEXT VALUE FOR metricas_seq")
-                id_metrica = cursor.fetchone()[0]
-
+                if id_fecha < max_id_fecha + 1:
+                    cursor.execute("SELECT NEXT VALUE FOR metricas_seq")
+                    id_metrica = cursor.fetchone()[0]
             # Inserting the metrics to the category 1
 
             cursor.execute("""
-                           COUNT(*) FROM dbo.MetricasPredicciones
-                           WHERE IdCategoria = 1;
+                           SELECT COUNT(*) FROM dbo.MetricasPredicciones
+                           WHERE IdCategoriaMetrica = 1;
                            """)
             n = int(cursor.fetchone()[0]) + 1
 
             cursor.execute(f"""
-                           SELECT FROM dbo.MetricasPredicciones
+                           SELECT * FROM dbo.MetricasPredicciones
                            WHERE IdFecha = {id_fecha - 1}
                            AND IdCategoriaMetrica = 1;
                            """)
@@ -346,7 +380,6 @@ def calculate_metrics(min_id_fecha, max_id_fecha, conn):
                 "sMAPE": last_metrics[0][7]
             }
 
-                            # Fetch y_true and y_pred
             cursor.execute(f"SELECT SUM(ConsumoMIPS) FROM dbo.ConsumosMIPS WHERE IdFecha = {id_fecha};")
             y_true = cursor.fetchone()[0]
             print(f"y_true: {y_true}")
@@ -373,9 +406,10 @@ def calculate_metrics(min_id_fecha, max_id_fecha, conn):
                 float(metrics_result['sMAPE'])
             ))
             conn.commit()
-                    
-            cursor.execute("SELECT NEXT VALUE FOR metricas_seq")
-            id_metrica = cursor.fetchone()[0]
+            
+            if id_fecha < max_id_fecha + 1:
+                cursor.execute("SELECT NEXT VALUE FOR metricas_seq")
+                id_metrica = cursor.fetchone()[0]
 
     return print("Metrics calculated successfully")
     
@@ -403,17 +437,45 @@ def predictions_orchestrator(conn, engine):
     cursor = conn.cursor()
 
     if predictions_count == 0:
-
-        cursor.execute("""ALTER SEQUENCE predicciones_seq 
-        RESTART WITH 1
-        INCREMENT BY 1
-        MINVALUE 1
-        MAXVALUE 100000
-        CYCLE;""")
-        
         return forecast_and_insert(max_id_fecha, conn, engine)
 
     else:
-        #Here metrics must be calculated
         calculate_metrics(min_id_fecha, max_id_fecha, conn)
+        cursor.execute("""DELETE FROM dbo.PrediccionesMIPS;""")
         return forecast_and_insert(max_id_fecha, conn, engine)
+
+def main():
+    """
+    Main function to update consumption data and execute forecasting.
+
+    This function performs the following steps:
+    1. Creates connections to the databases for inserting data, fetching data, and inserting forecasting data.
+    2. Updates the consumption data by checking if the necessary tables exist, fetching new data, and updating the database.
+    3. Executes the forecasting process using the updated data.
+
+    If a database or file error occurs, it catches the exception and prints an error message.
+
+    Finally, it ensures that all database connections are closed.
+
+    Raises:
+        pyodbc.DatabaseError: If a database error occurs.
+        FileNotFoundError: If a file-related error occurs.
+    """
+    while True:
+        try:
+            print("Connecting to databases...")
+            conn_insert = connect_to_insert_data()
+            conn_insert_predictions = connect_to_insert_forecasting_data()
+            print("Executing Forecasting...")
+            predictions_orchestrator(conn_insert, conn_insert_predictions)
+            print("Forecasting executed successfully")
+            break
+        finally:
+            try:
+                conn_insert.close()
+                conn_insert_predictions.close()
+            except NameError:
+                pass
+
+if __name__ == "__main__":
+    main()

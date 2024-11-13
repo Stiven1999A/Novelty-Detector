@@ -2,21 +2,21 @@
 
 ### `README.md`
 
-This README file contains the documentation of the project. It provides an overview of the project, including its purpose, features, installation instructions, usage guidelines, and any other relevant information that helps users understand and utilize the project effectively.
+Este archivo README contiene la documentación del proyecto. Proporciona una visión general del proyecto, incluyendo su propósito, características, instrucciones de instalación, pautas de uso y cualquier otra información relevante que ayude a los usuarios a entender y utilizar el proyecto de manera efectiva.
 
-### Contents
+### Contenidos
 
-1. **Project Overview**: A brief description of the project, its goals, and its main features.
-2. **Installation Instructions**: Step-by-step instructions on how to install and set up the project.
-3. **Usage Guidelines**: Information on how to use the project, including examples and common use cases.
-4. **Contributing**: Guidelines for contributing to the project, including how to report issues and submit pull requests.
-5. **License**: Information about the project's license and any legal considerations.
-6. **Contact Information**: Details on how to get in touch with the project maintainers for support or inquiries.
+1. **Visión General del Proyecto**: Una breve descripción del proyecto, sus objetivos y sus principales características.
+2. **Instrucciones de Instalación**: Instrucciones paso a paso sobre cómo instalar y configurar el proyecto.
+3. **Pautas de Uso**: Información sobre cómo usar el proyecto, incluyendo ejemplos y casos de uso comunes.
+4. **Contribuciones**: Pautas para contribuir al proyecto, incluyendo cómo reportar problemas y enviar solicitudes de extracción.
+5. **Licencia**: Información sobre la licencia del proyecto y cualquier consideración legal.
+6. **Información de Contacto**: Detalles sobre cómo ponerse en contacto con los mantenedores del proyecto para soporte o consultas.
 
-## Overview
-DETECTOR-DE-NOVEDADES is a project designed to manage and forecast MIPS consumption data. It includes functionalities for creating and updating database tables, fetching and inserting data, and generating forecasts using the Prophet model.
+## Visión General
+DETECTOR-DE-NOVEDADES es un proyecto diseñado para gestionar y predecir datos de consumo de MIPS. Incluye funcionalidades para crear y actualizar tablas de bases de datos, obtener e insertar datos, y generar pronósticos utilizando el modelo Prophet.
 
-## Project Structure
+## Estructura del Proyecto
 
 ```
 DETECTOR-DE-NOVEDADES/
@@ -44,35 +44,35 @@ DETECTOR-DE-NOVEDADES/
 
 ```
 
-## Files and Directories
+## Archivos y Directorios
 
 ### `.env`
-Contains environment variables for the project.
+Contiene variables de entorno para el proyecto.
 
 ### `.gitignore`
-Specifies files and directories to be ignored by Git.
+Especifica archivos y directorios que deben ser ignorados por Git.
 
 ### `database_tools/`
-Contains scripts for managing database connections and operations.
+Contiene scripts para gestionar conexiones y operaciones de bases de datos.
 
-- **`connections.py`**: Manages database connections.
-- **`create_tables.py`**: Contains the [`create_tables`](database_tools/create_tables.py) function to create necessary tables in the database.
-- **`delete_tables.py`**: Contains the [`delete_tables`](database_tools/delete_tables.py) function to delete tables from the database.
-- **`update_tables.py`**: Contains functions to update various tables in the database.
+- **`connections.py`**: Gestiona las conexiones a la base de datos.
+- **`create_tables.py`**: Contiene la función [`create_tables`](database_tools/create_tables.py) para crear las tablas necesarias en la base de datos.
+- **`delete_tables.py`**: Contiene la función [`delete_tables`](database_tools/delete_tables.py) para eliminar tablas de la base de datos.
+- **`update_tables.py`**: Contiene funciones para actualizar varias tablas en la base de datos.
 
 ### `forecast_tools/`
-Contains tools for forecasting.
+Contiene herramientas para la previsión.
 
-- **`metrics.py`**: Contains functions to calculate various forecasting metrics.
+- **`metrics.py`**: Contiene funciones para calcular varias métricas de previsión.
 
 ### `scripts/`
-Contains scripts for forecasting and inserting data.
+Contiene scripts para la previsión e inserción de datos.
 
-- **`forecasting.py`**: Contains the [`forecast_and_insert`](scripts/forecasting.py) function to forecast and insert data into the database.
-- **`insertingdata.py`**: Contains functions to check if tables exist, fetch new data, and update the database.
+- **`forecasting.py`**: Contiene la función [`forecast_and_insert`](scripts/forecasting.py) para prever e insertar datos en la base de datos.
+- **`insertingdata.py`**: Contiene funciones para verificar si existen tablas, obtener nuevos datos y actualizar la base de datos.
 
 ### `main.py`
-The main entry point of the project. It connects to the database, fetches new data, updates the database, labels atypical consumptions, and prints the labeled data. The main function calls several other functions:
+El punto de entrada principal del proyecto. Conecta a la base de datos, obtiene nuevos datos, actualiza la base de datos, etiqueta consumos atípicos e imprime los datos etiquetados. La función principal llama a varias otras funciones:
 - [`check_tables_exist`](scripts/insertingdata.py)
 - [`fetch_new_data`](scripts/insertingdata.py)
 - [`update_database`](scripts/insertingdata.py)
@@ -80,38 +80,38 @@ The main entry point of the project. It connects to the database, fetches new da
 - [`label_atypical_consumptions`](database_tools/update_tables.py)
 
 ### `pruebas.py`
-Contains test scripts for the project.
+Contiene scripts de prueba para el proyecto.
 
 ### `requirements.txt`
-Lists the dependencies required for the project.
+Lista las dependencias necesarias para el proyecto.
 
-## Usage
+## Uso
 
-### Setting Up
-1. Clone the repository.
-2. Create a virtual environment and activate it.
-3. Install the dependencies:
+### Configuración
+1. Clona el repositorio.
+2. Crea un entorno virtual y actívalo.
+3. Instala las dependencias:
     ```sh
     pip install -r requirements.txt
     ```
-4. Set up the environment variables in the `.env` file.
+4. Configura las variables de entorno en el archivo `.env`.
 
-### Running the Project
-To run the project, execute the `main.py` file:
+### Ejecutar el Proyecto
+Para ejecutar el proyecto, ejecuta el archivo `main.py`:
 ```sh
 python [main.py](http://_vscodecontentref_/#%7B%22uri%22%3A%7B%22%24mid%22%3A1%2C%22path%22%3A%22%2Fmnt%2Fc%2FUsers%2Fegonzalez570%2FOneDrive_Grupo_exito.com%2FEscritorio%2FDetector-de-Novedades%2Fmain.py%22%2C%22scheme%22%3A%22vscode-remote%22%2C%22authority%22%3A%22wsl%2BUbuntu-22.04%22%7D%7D)
 ```
-Functions
+Funciones
 database_tools/create_tables.py
-create_tables(conn): Creates necessary tables in the database and inserts initial data.
+create_tables(conn): Crea las tablas necesarias en la base de datos e inserta datos iniciales.
 scripts/insertingdata.py
-check_tables_exist(conn): Checks if tables exist in the database and creates them if they do not.
-fetch_new_data(conn_insert, conn_fetch): Fetches new data from the database.
-update_database(conn, df): Updates the database with the provided DataFrame.
+check_tables_exist(conn): Verifica si existen tablas en la base de datos y las crea si no existen.
+fetch_new_data(conn_insert, conn_fetch): Obtiene nuevos datos de la base de datos.
+update_database(conn, df): Actualiza la base de datos con el DataFrame proporcionado.
 scripts/forecasting.py
-forecast_and_insert(max_id_fecha, conn, engine): Forecasts and inserts data into the database.
-Contributing
-Contributions are welcome! Please fork the repository and submit a pull request.
+forecast_and_insert(max_id_fecha, conn, engine): Prevé e inserta datos en la base de datos.
+Contribuciones
+¡Las contribuciones son bienvenidas! Por favor, haz un fork del repositorio y envía una solicitud de extracción.
 
-License
-This project is licensed under the MIT License.
+Licencia
+Este proyecto está licenciado bajo la Licencia MIT.
