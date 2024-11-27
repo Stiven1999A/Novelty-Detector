@@ -1,0 +1,20 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: novelty_detector:latest
+    network_mode: host
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_SERVER_INSERTIONS=296SQLP06
+      - DB_NAME_INSERTIONS=Consumos-PrediccionesMIPS
+      - DB_USER_INSERTIONS=UsrGestionMIPS
+      - DB_PASSWORD_INSERTIONS=U5r9357lonMlP5UMaH5
+      - DB_PORT_INSERTIONS=1433
+      - DB_SERVER_EXTRACTION=296COSC01\\SEGUNDA
+      - DB_NAME_EXTRACTION=WLMDW_TEMPO
+      - DB_USER_EXTRACTION=usrCargaMips
+      - DB_PASSWORD_EXTRACTION=clvC4rG4M1p5PZM77
+      - DB_DRIVER_EXTRACTION=ODBC Driver 17 for SQL Server

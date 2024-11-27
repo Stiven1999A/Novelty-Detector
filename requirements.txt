@@ -1,0 +1,12 @@
+numpy
+pyodbc
+pandas
+scikit-learn
+SQLAlchemy
+python-decouple
+plotly
+matplotlib
+scipy
+seaborn
+prophet
+python-dotenv
