@@ -19,11 +19,11 @@ def segment_data(df):
         ('2021-01-01', '2021-01-31'),
         ('2021-02-01', '2021-02-28'),
         ('2021-03-01', '2021-03-20'),
-        ('2021-03-21', '2021-03-31')
+        ('2021-03-21', '2021-04-01')
     ]
     
     for start_date, end_date in date_ranges:
-        segment = df[(df['Fecha'] >= start_date) & (df['Fecha'] <= end_date)]
+        segment = df[(df['Fecha'] >= start_date) & (df['Fecha'] < end_date)]
         segments.append(segment)
     
     return segments
