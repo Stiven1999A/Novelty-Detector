@@ -1,0 +1,12 @@
+site_name: 'Backstage'
+site_description: 'Main documentation for Backstage features and platform APIs'
+repo_url: https://github.com/backstage/backstage
+edit_uri: edit/master/docs
+docs_dir: './documentacion'
+
+plugins:
+  - techdocs-core
+
+nav:
+  - Documentación:
+    - Readme: 'readme.md'

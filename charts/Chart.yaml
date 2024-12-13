@@ -1,0 +1,8 @@
+apiVersion: v1
+name: mips-sinco-estadisticas
+home: https://grupo-exito.visualstudio.com/GCIT-Agile/_git/mips-sinco-estadisticas
+version: "1.0"
+description: El repo esta destinado para alojar archivos ejecutables con el fin de analizar datos en MIPS
+maintainers: 
+  - name: Estiben González Londoño
+    email: eandrey.gonzalez@udea.edu.co

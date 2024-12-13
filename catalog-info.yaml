@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: mips-sinco-estadisticas
+  description: estadisticas
+  annotations:
+    backstage.io/techdocs-ref: dir:./documentacion
+spec:
+  type: service
+  owner: grupo.exito
+  lifecycle: Desarrollo

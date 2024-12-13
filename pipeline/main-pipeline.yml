@@ -1,0 +1,16 @@
+resources:
+  repositories:
+  - repository: templates
+    name: GCIT/arquitectura-documentacion
+    type: git
+    ref: feature/mips-oks
+
+variables:
+  - template: vars-azure-pipeline.yml
+
+extends:
+  template: pipeline/main.yml@templates
+  parameters:
+      language: python    
+      type: dataops
+      typerelease: oks

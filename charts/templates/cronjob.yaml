@@ -1,0 +1,86 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: "{{.Release.Name}}"
+  namespace: "{{.Values.deploy.namespace}}"
+  labels:
+    type: "{{.Values.deploy.type}}"
+    ambiente: "{{.Values.deploy.ambiente}}"
+    aplicacion: "{{.Values.deploy.aplicacion}}"
+    area.negocio: "{{.Values.deploy.area_negocio}}"
+    area.ti: "{{.Values.deploy.area_ti}}"
+    pais: "{{.Values.deploy.pais}}"
+spec:
+  schedule: "{{.Values.deploy.schedule}}"
+  jobTemplate:
+    spec:      
+      template:
+        metadata:
+          labels:
+              type: "{{.Values.deploy.type}}"
+              ambiente: "{{.Values.deploy.ambiente}}"
+              aplicacion: "{{.Values.deploy.aplicacion}}"
+              area.negocio: "{{.Values.deploy.area_negocio}}"
+              area.ti: "{{.Values.deploy.area_ti}}"
+              pais: "{{.Values.deploy.pais}}"
+        spec:         
+          containers:
+          - name: "{{.Values.deploy.name}}"
+            image: "{{.Values.deploy.acrServer}}/{{.Values.deploy.ambiente}}-{{.Values.deploy.name}}:{{.Values.deploy.imageTag}}"
+            imagePullPolicy: Always
+            env:
+              - name: DB_SERVER_EXTRACTION
+                value: "{{.Values.deploy.db_server_extraction}}"
+              - name: DB_NAME_EXTRACTION
+                value: "{{.Values.deploy.db_name_extraction}}"
+              - name: DB_USER_EXTRACTION
+                value: "{{.Values.deploy.db_user_extraction}}"
+              - name: DB_DRIVER_EXTRACTION
+                value: "{{.Values.deploy.db_driver_extraction}}"
+              - name: DB_PORT_EXTRACTION
+                value: "{{.Values.deploy.db_port_extraction}}"
+              - name: DB_PASSWORD_EXTRACTION
+                valueFrom:
+                  secretKeyRef:
+                    name: "secret-{{.Values.deploy.name}}"
+                    key: DB_PASSWORD_EXTRACTION
+              - name: PATH_HOSTPATH
+                value: "{{.Values.deploy.path_hostPath}}"
+              - name: DB_SERVER_INSERTIONS
+                value: "{{.Values.deploy.db_server_insertions}}"
+              - name: DB_NAME_INSERTIONS
+                value: "{{.Values.deploy.db_name_insertions}}"
+              - name: DB_USER_INSERTIONS
+                value: "{{.Values.deploy.db_user_insertions}}"
+              - name: DB_DRIVER_INSERTIONS
+                value: "{{.Values.deploy.db_driver_insertions}}"
+              - name: DB_PORT_INSERTIONS
+                value: "{{.Values.deploy.db_port_insertions}}"
+              - name: DB_PASSWORD_INSERTIONS
+                valueFrom:
+                  secretKeyRef:
+                    name: "secret-{{.Values.deploy.name}}"
+                    key: DB_PASSWORD_INSERTIONS
+            resources:
+              limits:
+                cpu: "{{.Values.deploy.cpulimits}}"
+                memory: "{{.Values.deploy.memorylimits}}"
+              requests:
+                cpu: "{{.Values.deploy.cpurequest}}"
+                memory: "{{.Values.deploy.memoryrequest}}"
+            volumeMounts:
+            - name: tz-colombia
+              mountPath: /etc/localtime
+            - mountPath: {{.Values.deploy.path_hostPath}}
+              name: {{.Release.Name}}-volume
+          volumes:
+          - name: tz-colombia
+            hostPath:
+                path: /usr/share/zoneinfo/America/Bogota
+          - name: {{.Release.Name}}-volume
+            hostPath:
+                path: {{.Values.deploy.path_hostPath}}
+                type: Directory
+          restartPolicy: OnFailure
+          imagePullSecrets:
+            - name: {{.Values.deploy.imagePullSecrets}}

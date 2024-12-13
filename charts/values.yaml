@@ -1,0 +1,35 @@
+# Default values for chart
+
+deploy:
+    name: #{repositoryName}#
+    namespace: #{stage}#-#{namespace}#
+    replicas: #{minReplicas}#
+    type: #{type}#
+    ambiente: #{stage}#
+    area_negocio: #{namespace}#
+    area_ti: #{area_ti}#
+    pais: #{pais}#
+    acrServer: #{ecr}#
+    imageTag: #{imageTag}#
+    cpulimits: #{cpulimits}#
+    cpurequest: #{cpurequest}#
+    memorylimits: #{memorylimits}#
+    memoryrequest: #{memoryrequest}#
+    maxReplicas: #{maxReplicas}#
+    minReplicas: #{minReplicas}#
+    path_hostPath: #{path_hostPath}#
+    imagePullSecrets: #{imagePullSecrets}#
+    schedule: #{schedule}# 
+    db_server_extraction: #{dbServerExtraction}# 
+    db_name_extraction: #{dbNameExtraction}#
+    db_driver_extraction: #{dbDriverExtraction}#
+    db_user_extraction: #{dbUserExtraction}# 
+    db_password_extraction: #{dbPassExtraction}#
+    db_port_extraction: #{dbPortExtraction}#
+    db_server_insertions: #{dbServerInsertions}# 
+    db_name_insertions: #{dbNameInsertions}#
+    db_driver_insertions: #{dbDriverInsertions}#
+    db_user_insertions: #{dbUserInsertions}# 
+    db_password_insertions: #{dbPassInsertions}#
+    db_port_insertions: #{dbPortInsertions}#
+    stage: #{stage}#
