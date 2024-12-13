@@ -2,7 +2,6 @@ import time
 import pandas as pd
 import numpy as np
 import scipy.stats as stats
-from app.database_tools.connections import connect_to_fetch_data, connect_to_insert_data
 
 def segment_data(df):
     #df['Fecha'] = pd.to_datetime(df['Fecha'])
@@ -212,21 +211,3 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
             df_to_insert = pd.DataFrame()
 
     return 'Data updated successfully'
-
-def main():
-
-    conn_insert = connect_to_insert_data()
-    conn_fetch = connect_to_fetch_data()
-
-    df = pd.read_csv('test-file.csv', decimal='.')
-    
-    print(df.head())
-
-    print(detect_atypical_values(conn_insert, conn_fetch, df))
-
-    conn_insert.close()
-    conn_fetch.close()
-
-
-if __name__ == "__main__":
-    main()
