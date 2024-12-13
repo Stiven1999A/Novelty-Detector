@@ -1,0 +1,11 @@
+variables:
+- group: mips-sinco-estadisticas
+
+- ${{ if eq(variables['Build.SourceBranchName'], 'develop') }}:
+  - group: dev-mips-sinco-estadisticas
+- ${{ if eq(variables['Build.SourceBranchName'], 'release') }}:
+  - group: qa-mips-sinco-estadisticas
+- ${{ if eq(variables['Build.SourceBranchName'], 'master') }}:
+  - group: pdn-mips-sinco-estadisticas
+- name: requirements_file_path
+  value: $(System.DefaultWorkingDirectory)

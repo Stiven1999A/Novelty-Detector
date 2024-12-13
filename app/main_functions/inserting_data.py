@@ -8,8 +8,7 @@ from database_tools.update_tables import (
     update_procesos_grupos,
     update_fechas,
     add_day_of_week_id,
-    filter_existing_rows,
-    label_atypical_consumptions
+    filter_existing_rows
 )
 def check_tables_exist(conn):
     """
@@ -66,7 +65,7 @@ def fetch_new_data(conn_insert, conn_fetch):
     count = cursor.fetchone()[0]
 
     if count == 0:
-        query = ("""SELECT * FROM dbo.refrescarprocesos_10dias;""")
+        query = ("""SELECT * FROM dbo.refrescarprocesos_10dias Where Fecha <= '2024-10-31';""")
 
     else:
         cursor.execute('SELECT MAX(IdFecha) FROM dbo.ConsumosMIPS')
@@ -103,6 +102,5 @@ def update_database(conn, df):
     df = update_fechas(conn, df)
     update_procesos_grupos(conn, df)
     df = filter_existing_rows(df, conn)
-    df = label_atypical_consumptions(conn, df)
     
     return df

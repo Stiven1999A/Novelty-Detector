@@ -1,6 +1,7 @@
 """database/connections.py"""
 import os
 import pyodbc
+from urllib import parse
 from sqlalchemy import create_engine
 
 def connect_to_insert_data():
@@ -35,15 +36,16 @@ def connect_to_fetch_data():
     Returns:
         sqlalchemy.engine.base.Connection: A connection object to the database.
     """
-    db_server = os.getenv("DB_SERVER_EXTRACTION")
-    db_name = os.getenv("DB_NAME_EXTRACTION")
-    db_user = os.getenv("DB_USER_EXTRACTION")
-    db_password = os.getenv("DB_PASSWORD_EXTRACTION")
-    db_driver = os.getenv("DB_DRIVER_EXTRACTION")
-    conn_str = (
-        f"mssql+pyodbc://{db_user}:{db_password}@{db_server}/{db_name}"
-        f"?driver={db_driver}&timeout=60"
-    )
+    driver = os.getenv("DB_DRIVER_EXTRACTION")
+    server = os.getenv("DB_SERVER_EXTRACTION")
+    database = os.getenv("DB_NAME_EXTRACTION")
+    user = os.getenv("DB_USER_EXTRACTION")
+    password = os.getenv("DB_PASSWORD_EXTRACTION")
+
+    String = 'Driver={};Server={},1428;Database={};Uid={};Pwd={};Encrypt=yes;TrustServerCertificate=yes;INTEGRATED SECURITY=SSPI;Connection Timeout=30;sslverify=0'.format(driver, server, database, user, password)
+    params = parse.quote_plus(String)
+    conn_str = "mssql+pyodbc:///?odbc_connect={}".format(params)
+
     engine = create_engine(conn_str)
     connection = engine.connect()
     if connection:
@@ -69,5 +71,5 @@ def connect_to_insert_forecasting_data():
     engine = create_engine(conn_str)
     connection = engine.connect()
     if connection:
-        print("Connection to the database for inserting data was successful.")
+        print("Connection to the database for inserting forcasts data was successful.")
     return connection

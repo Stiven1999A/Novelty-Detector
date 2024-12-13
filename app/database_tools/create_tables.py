@@ -89,6 +89,7 @@ def create_tables(conn):
         IdFecha INT,
         IdDiaSemana INT,
         IdAtipico INT,
+        Ejecuciones INT,
         ConsumoMIPS FLOAT,
         FOREIGN KEY (IdProceso) REFERENCES Procesos(IdProceso),
         FOREIGN KEY (IdGrupo) REFERENCES Grupos(IdGrupo),
