@@ -9,7 +9,7 @@ from main_functions.inserting_data import (
     fetch_new_data,
     update_database
 )
-from database_tools.connections import (
+from app.database_tools.connections import (
     connect_to_insert_data,
     connect_to_fetch_data,
     connect_to_insert_forecasting_data

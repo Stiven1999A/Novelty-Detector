@@ -16,10 +16,10 @@ def segment_data(df):
     df.loc[:, 'Fecha'] = pd.to_datetime(df['Fecha'])
     segments = []
     date_ranges = [
-        ('2021-01-01', '2021-02-01'),
-        ('2021-02-01', '2021-03-01'),
-        ('2021-03-01', '2021-03-21'),
-        ('2021-03-21', '2021-04-01')
+        ('2021-01-01', '2022-05-29'),
+        ('2022-05-29', '2023-04-03'),
+        ('2023-04-03', '2023-07-01'),
+        ('2023-07-01', '2021-11-01')
     ]
     
     for start_date, end_date in date_ranges:
@@ -100,7 +100,7 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
     """
     if df.empty:
         return df
-
+    print("Detecting atypical values...")
     df = df.rename(columns={'total_mipsFecha': 'ConsumoMIPS', 'total_ejecucionesFecha': 'Ejecuciones'})
     df['IdAtipico'] = 0
 
@@ -158,20 +158,18 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
                 process_data = segment[segment['IdProceso'] == id_process]
                 daily_segments = [process_data[process_data['IdDiaSemana'] == day] for day in process_data['IdDiaSemana'].unique()]
                 for daily_segment in daily_segments:
-                    if daily_segment.empty:
-                        continue
-                    elif len(daily_segment) == 1:
+                    if len(daily_segment) == 1:
                         daily_segment = label_atypical_values(daily_segment, method='MAD', stored_consumptions=process_data['ConsumoMIPS'].tolist())
                     elif len(daily_segment) < 20:
                         daily_segment = label_atypical_values(daily_segment, method='MAD')
-                    else:
-                        normal_test = stats.shapiro(daily_segment['ConsumoMIPS'])[1] > 0.05
+                    elif len(daily_segment) >= 20:
+                        normal_test = stats.shapiro(daily_segment['ConsumoMIPS'].tolist())[1] > 0.05
                         if normal_test:
                             daily_segment = label_atypical_values(daily_segment, method='IQR')
                         else:
                             daily_segment = label_atypical_values(daily_segment, method='MAD')
-
-                    df_to_insert = pd.concat([df_to_insert, daily_segment], ignore_index=True)
+                    if not daily_segment.empty:
+                        df_to_insert = pd.concat([df_to_insert, daily_segment], ignore_index=True)
         
         print("Updating the ConsumosMIPS table.")
         insert_data(df_to_insert)
@@ -179,15 +177,11 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
     else:
         df = df[['IdConsumo', 'IdProceso', 'IdGrupo', 'IdFecha', 'IdDiaSemana', 'IdAtipico', 'Ejecuciones', 'ConsumoMIPS']]
         
-        cursor.execute("SELECT IdFecha FROM dbo.Fechas WHERE Fecha = '2021-03-20'")
+        cursor.execute("SELECT IdFecha FROM dbo.Fechas WHERE Fecha = '2023-07-01';")
         start_id_fecha = cursor.fetchone()[0]
-
-        cursor.execute("SELECT IdFecha FROM dbo.Fechas WHERE Fecha = '2021-03-31'")
-        end_id_fecha = cursor.fetchone()[0]
-        
         for id_fecha in sorted(df['IdFecha'].unique()):
             data_fecha = df[df['IdFecha'] == id_fecha]
-            id_diasemana = data_fecha['IdDiaSemana'].unique()
+            id_diasemana = int(data_fecha['IdDiaSemana'].unique())
             id_processes = sorted(data_fecha['IdProceso'].unique())
             for id_process in id_processes:
                 new_consumption = data_fecha[data_fecha['IdProceso'] == id_process]
@@ -195,8 +189,7 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
                     new_consumption = new_consumption.iloc[0:1].copy()
                     new_consumption['ConsumoMIPS'] = data_fecha[data_fecha['IdProceso'] == id_process]['ConsumoMIPS'].sum()
                     new_consumption['Ejecuciones'] = data_fecha[data_fecha['IdProceso'] == id_process]['Ejecuciones'].sum()
-
-                cursor.execute(f"""SELECT ConsumoMIPS FROM dbo.ConsumosMIPS WHERE IdProceso = {id_process} AND IdDiaSemana = {id_diasemana} AND IdFecha BETWEEN {start_id_fecha} AND {end_id_fecha};""")
+                cursor.execute(f"""SELECT ConsumoMIPS FROM dbo.ConsumosMIPS WHERE IdProceso = {id_process} AND IdDiaSemana = {id_diasemana} AND IdFecha >= {start_id_fecha};""")
                 stored_consumptions = [row[0] for row in cursor.fetchall()]
         
                 if len(stored_consumptions) == 0:
@@ -210,7 +203,7 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
                         new_consumption['IdAtipico'] = 0
                 elif len(stored_consumptions) < 20:
                     new_consumption = label_atypical_values(new_consumption, method='MAD', stored_consumptions=stored_consumptions)
-                else:
+                elif len(stored_consumptions) >= 20:
                     normal_test = stats.shapiro(stored_consumptions)[1] > 0.05
                     if normal_test:
                         new_consumption = label_atypical_values(new_consumption, method='IQR', stored_consumptions=stored_consumptions)
