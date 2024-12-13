@@ -1,7 +1,6 @@
 import time
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler
 import scipy.stats as stats
 
 def segment_data(df):
@@ -104,6 +103,7 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
     print("Detecting atypical values...")
     df = df.rename(columns={'total_mipsFecha': 'ConsumoMIPS', 'total_ejecucionesFecha': 'Ejecuciones'})
     df['IdAtipico'] = 0
+    t = 0
     n = 0
     cursor = conn_insert.cursor()
     cursor.execute('SELECT MAX(IdConsumo) FROM dbo.ConsumosMIPS')
@@ -159,20 +159,22 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
                 process_data = segment[segment['IdProceso'] == id_process]
                 daily_segments = [process_data[process_data['IdDiaSemana'] == day] for day in process_data['IdDiaSemana'].unique()]
                 for daily_segment in daily_segments:
+                    t += 1
                     if len(daily_segment) == 1:
                         daily_segment = label_atypical_values(daily_segment, method='MAD', stored_consumptions=process_data['ConsumoMIPS'].tolist())
                     elif len(daily_segment) < 20:
                         daily_segment = label_atypical_values(daily_segment, method='MAD')
                     elif len(daily_segment) >= 20:
-                        scaler = StandardScaler()
-                        scalered_data = scaler.fit_transform(daily_segment[['ConsumoMIPS']])
-                        normal_test = stats.shapiro(scalered_data.tolist())[1] > 0.05
-                        if normal_test:
-                            n += 1
-                            print(n)
-                            daily_segment = label_atypical_values(daily_segment, method='IQR')
-                        else:
+                        data_normal_test = daily_segment['ConsumoMIPS'].tolist()
+                        if np.ptp(data_normal_test) == 0:
                             daily_segment = label_atypical_values(daily_segment, method='MAD')
+                        else:
+                            normal_test = stats.shapiro(daily_segment['ConsumoMIPS'].tolist())[1] > 0.05
+                            if normal_test:
+                                n += 1
+                                daily_segment = label_atypical_values(daily_segment, method='IQR')
+                            else:
+                                daily_segment = label_atypical_values(daily_segment, method='MAD')
                     if not daily_segment.empty:
                         df_to_insert = pd.concat([df_to_insert, daily_segment], ignore_index=True)
         
@@ -196,7 +198,7 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
                     new_consumption['Ejecuciones'] = data_fecha[data_fecha['IdProceso'] == id_process]['Ejecuciones'].sum()
                 cursor.execute(f"""SELECT ConsumoMIPS FROM dbo.ConsumosMIPS WHERE IdProceso = {id_process} AND IdDiaSemana = {id_diasemana} AND IdFecha >= {start_id_fecha};""")
                 stored_consumptions = [row[0] for row in cursor.fetchall()]
-        
+                t += 1
                 if len(stored_consumptions) == 0:
                     new_consumption['IdAtipico'] = 1
                 elif len(stored_consumptions) == 1:
@@ -209,13 +211,15 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
                 elif len(stored_consumptions) < 20:
                     new_consumption = label_atypical_values(new_consumption, method='MAD', stored_consumptions=stored_consumptions)
                 elif len(stored_consumptions) >= 20:
-                    scaler = StandardScaler()
-                    scalered_data = scaler.fit_transform(np.array(stored_consumptions).reshape(-1, 1))
-                    normal_test = stats.shapiro(scalered_data)[1] > 0.05
-                    if normal_test:
-                        new_consumption = label_atypical_values(new_consumption, method='IQR', stored_consumptions=stored_consumptions)
-                    else:
+                    if np.ptp(stored_consumptions) == 0:
                         new_consumption = label_atypical_values(new_consumption, method='MAD', stored_consumptions=stored_consumptions)
+                    else:
+                        normal_test = stats.shapiro(stored_consumptions)[1] > 0.05
+                        if normal_test:
+                            n += 1
+                            new_consumption = label_atypical_values(new_consumption, method='IQR', stored_consumptions=stored_consumptions)
+                        else:
+                            new_consumption = label_atypical_values(new_consumption, method='MAD', stored_consumptions=stored_consumptions)
                 
                 df_to_insert = pd.concat([df_to_insert, new_consumption], ignore_index=True)
             
@@ -223,4 +227,4 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
             insert_data(df_to_insert)
             df_to_insert = pd.DataFrame()
 
-    return 'Data updated successfully'
+    return f'Data updated successfully. {t} processes were labeled using the MAD method, and {n} processes were labeled using the IQR method.'
