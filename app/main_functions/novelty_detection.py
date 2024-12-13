@@ -1,6 +1,7 @@
 import time
 import pandas as pd
 import numpy as np
+from sklearn.preprocessing import StandardScaler
 import scipy.stats as stats
 
 def segment_data(df):
@@ -141,6 +142,7 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
                 start_time = time.time()
 
     if last_id == 0:
+        n = 0
         df = df[['IdConsumo', 'IdProceso', 'IdGrupo', 'IdFecha', 'IdDiaSemana', 'IdAtipico', 'Ejecuciones', 'ConsumoMIPS', 'Fecha']]
         count_df = df['IdProceso'].value_counts().reset_index()
         count_df.columns = ['IdProceso', 'Count']
@@ -163,8 +165,12 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
                     elif len(daily_segment) < 20:
                         daily_segment = label_atypical_values(daily_segment, method='MAD')
                     elif len(daily_segment) >= 20:
-                        normal_test = stats.shapiro(daily_segment['ConsumoMIPS'].tolist())[1] > 0.05
+                        scaler = StandardScaler()
+                        scalered_data = scaler.fit_transform(daily_segment[['ConsumoMIPS']])
+                        normal_test = stats.shapiro(scalered_data.tolist())[1] > 0.05
                         if normal_test:
+                            n += 1
+                            print(n)
                             daily_segment = label_atypical_values(daily_segment, method='IQR')
                         else:
                             daily_segment = label_atypical_values(daily_segment, method='MAD')
@@ -204,7 +210,9 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
                 elif len(stored_consumptions) < 20:
                     new_consumption = label_atypical_values(new_consumption, method='MAD', stored_consumptions=stored_consumptions)
                 elif len(stored_consumptions) >= 20:
-                    normal_test = stats.shapiro(stored_consumptions)[1] > 0.05
+                    scaler = StandardScaler()
+                    scalered_data = scaler.fit_transform(np.array(stored_consumptions).reshape(-1, 1))
+                    normal_test = stats.shapiro(scalered_data)[1] > 0.05
                     if normal_test:
                         new_consumption = label_atypical_values(new_consumption, method='IQR', stored_consumptions=stored_consumptions)
                     else:
