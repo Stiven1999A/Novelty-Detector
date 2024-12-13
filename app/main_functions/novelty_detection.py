@@ -104,7 +104,7 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
     print("Detecting atypical values...")
     df = df.rename(columns={'total_mipsFecha': 'ConsumoMIPS', 'total_ejecucionesFecha': 'Ejecuciones'})
     df['IdAtipico'] = 0
-
+    n = 0
     cursor = conn_insert.cursor()
     cursor.execute('SELECT MAX(IdConsumo) FROM dbo.ConsumosMIPS')
     last_id = cursor.fetchone()[0] or 0
@@ -142,7 +142,6 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
                 start_time = time.time()
 
     if last_id == 0:
-        n = 0
         df = df[['IdConsumo', 'IdProceso', 'IdGrupo', 'IdFecha', 'IdDiaSemana', 'IdAtipico', 'Ejecuciones', 'ConsumoMIPS', 'Fecha']]
         count_df = df['IdProceso'].value_counts().reset_index()
         count_df.columns = ['IdProceso', 'Count']
