@@ -48,8 +48,7 @@ def label_atypical_values(new_consumptions, method='MAD', stored_consumptions=No
             else:
                 return 0
 
-    new_consumptions['IdAtipico'] = 0  # Initialize the column with default values
-    new_consumptions['IdAtipico'].iloc[:] = new_consumptions['ConsumoMIPS'].apply(label_value).values
+    new_consumptions.loc[:, 'IdAtipico'] = new_consumptions['ConsumoMIPS'].apply(label_value).values
     return new_consumptions
 
 def detect_atypical_values(conn_insert, df: pd.DataFrame):
