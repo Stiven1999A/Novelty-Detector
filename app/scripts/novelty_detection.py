@@ -13,7 +13,7 @@ def segment_data(df):
                               within the specified date ranges.
     """
 
-    df['Fecha'] = pd.to_datetime(df['Fecha'])
+    df.loc[:, 'Fecha'] = pd.to_datetime(df['Fecha'])
     segments = []
     date_ranges = [
         ('2021-01-01', '2021-01-31'),
