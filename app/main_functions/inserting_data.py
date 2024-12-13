@@ -1,7 +1,5 @@
 """DETECTOR-DE-NOVEDADES/script/insertingdata.py"""
 import pandas as pd
-from database_tools.create_tables import create_tables
-from database_tools.delete_tables import delete_tables
 from database_tools.update_tables import (
     update_processes,
     update_groups,
@@ -10,6 +8,8 @@ from database_tools.update_tables import (
     add_day_of_week_id,
     filter_existing_rows
 )
+from app.database_tools.create_tables import create_tables
+from app.database_tools.delete_tables import delete_tables
 def check_tables_exist(conn):
     """
     Checks if tables exist in the specified database schema and catalog.
