@@ -2,12 +2,13 @@
 import pyodbc
 import time
 from dotenv import load_dotenv
-from scripts.insertingdata import (
+from main_functions.forecasting import predictions_orchestrator
+from main_functions.novelty_detection import detect_atypical_values
+from main_functions.inserting_data import (
     check_tables_exist,
     fetch_new_data,
     update_database
 )
-from scripts.forecasting import predictions_orchestrator
 from database_tools.connections import (
     connect_to_insert_data, 
     connect_to_fetch_data, 
@@ -42,6 +43,7 @@ def main():
             check_tables_exist(conn_insert)
             new_data = fetch_new_data(conn_insert, conn_fetch)
             updated_data = update_database(conn_insert, new_data)
+            print(detect_atypical_values(conn_insert, updated_data))
 
             if updated_data.empty:
                 print("No new data to update")

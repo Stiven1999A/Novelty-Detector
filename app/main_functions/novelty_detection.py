@@ -16,9 +16,9 @@ def segment_data(df):
     df.loc[:, 'Fecha'] = pd.to_datetime(df['Fecha'])
     segments = []
     date_ranges = [
-        ('2021-01-01', '2021-01-31'),
-        ('2021-02-01', '2021-02-28'),
-        ('2021-03-01', '2021-03-20'),
+        ('2021-01-01', '2021-02-01'),
+        ('2021-02-01', '2021-03-01'),
+        ('2021-03-01', '2021-03-21'),
         ('2021-03-21', '2021-04-01')
     ]
     
@@ -126,7 +126,7 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
                 int(row['IdFecha']),
                 int(row['IdDiaSemana']),
                 int(row['IdAtipico']),
-                float(row['Ejecuciones']),
+                int(row['Ejecuciones']),
                 float(row['ConsumoMIPS'])
             )
             for _, row in df_to_insert.iterrows()
