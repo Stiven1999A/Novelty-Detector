@@ -2,6 +2,7 @@ import time
 import pandas as pd
 import numpy as np
 import scipy.stats as stats
+from app.database_tools.connections import connect_to_fetch_data, connect_to_insert_data
 
 def segment_data(df):
     #df['Fecha'] = pd.to_datetime(df['Fecha'])
@@ -59,19 +60,23 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
 
     df = df.rename(columns={'total_mipsFecha': 'ConsumoMIPS', 'total_ejecucionesFecha': 'Ejecuciones'})
     df['IdAtipico'] = 0
-    df = df[
-        ['IdConsumo', 'IdProceso', 'IdGrupo', 'IdFecha', 'IdDiaSemana',
-        'IdAtipico', 'Ejecuciones', 'ConsumoMIPS']
-        ]
+
     cursor = conn_insert.cursor()
     cursor.execute('SELECT MAX(IdConsumo) FROM dbo.ConsumosMIPS')
     last_id = cursor.fetchone()[0] or 0
     next_id = last_id + 1
+
     df['IdConsumo'] = range(next_id, next_id + len(df))
 
     df_to_insert = pd.DataFrame()
 
     if last_id == 0:
+
+        df = df[
+            ['IdConsumo', 'IdProceso', 'IdGrupo', 'IdFecha', 'IdDiaSemana',
+            'IdAtipico', 'Ejecuciones', 'ConsumoMIPS', 'Fecha']
+            ]
+
         count_df = df['IdProceso'].value_counts().reset_index()
         count_df.columns = ['IdProceso', 'Count']
         df_idprocess_one_execution = count_df[count_df['Count'] == 1]
@@ -129,7 +134,13 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
                 print("Process is still running...")
                 start_time = time.time()
 
-    else:     
+    else:
+
+        df = df[
+            ['IdConsumo', 'IdProceso', 'IdGrupo', 'IdFecha', 'IdDiaSemana',
+            'IdAtipico', 'Ejecuciones', 'ConsumoMIPS']
+            ]
+        
         cursor.execute("SELECT IdFecha FROM dbo.Fechas WHERE Fecha = '2021-03-20'")
         start_id_fecha = cursor.fetchone()[0]
 
@@ -201,3 +212,21 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
             df_to_insert = pd.DataFrame()
 
     return 'Data updated successfully'
+
+def main():
+
+    conn_insert = connect_to_insert_data()
+    conn_fetch = connect_to_fetch_data()
+
+    df = pd.read_csv('test-file.csv', decimal='.')
+    
+    print(df.head())
+
+    print(detect_atypical_values(conn_insert, conn_fetch, df))
+
+    conn_insert.close()
+    conn_fetch.close()
+
+
+if __name__ == "__main__":
+    main()
