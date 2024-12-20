@@ -1,10 +1,11 @@
-"DETECTOR-DE-NOVEDADES/scripts/forecasting.py"
+"DETECTOR-DE-NOVEDADES/main_functions/forecasting.py"
 import pandas as pd
 from prophet import Prophet
-from database_tools.update_tables import add_day_of_week_id
-from forecast_tools.metrics import metrics
 from sqlalchemy.exc import OperationalError, PendingRollbackError
+from forecast_tools.metrics import metrics
 from database_tools.connections import connect_to_insert_forecasting_data, connect_to_insert_data
+from database_tools.update_tables import add_day_of_week_id
+
 
 def parameters(conn):
     """
@@ -72,7 +73,7 @@ def forecast_and_insert(max_id_fecha, conn, engine):
                        MINVALUE 1
                        MAXVALUE 100000
                        CYCLE;""")
-        print(f"Fetching data from ConsumosMIPS")
+        print("Fetching data from ConsumosMIPS")
         query = f"""
             SELECT IdFecha, SUM(ConsumoMIPS) as ConsumoMIPS FROM dbo.ConsumosMIPS
             WHERE IdFecha <= {max_id_fecha}
@@ -110,7 +111,7 @@ def forecast_and_insert(max_id_fecha, conn, engine):
         future_dates = pd.read_sql(future_dates_query, engine)
 
         # Predicting the future values
-        print(f"Forecasting")
+        print("Forecasting")
         forecast = model.predict(future_dates)
         forecast = forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']]
         forecast = forecast.rename(columns={'ds': 'Fecha', 'yhat': 'Prediccion', 'yhat_lower': 'LimInf', 'yhat_upper': 'LimSup'})
@@ -133,7 +134,7 @@ def forecast_and_insert(max_id_fecha, conn, engine):
         forecast = forecast[['IdPrediccion', 'IdFecha', 'IdDiaSemana', 'Prediccion', 'LimInf', 'LimSup']]
         print(forecast.head())  
         # Inserting forecast into the database in bulk
-        print(f"Inserting forecast into the database")
+        print("Inserting forecast into the database")
         forecast_to_insert = [
             (
                 int(row['IdPrediccion']),
@@ -177,7 +178,6 @@ def calculate_metrics(min_id_fecha, max_id_fecha, conn):
     Returns:
     None
     """
-    """"""
     print("Calculating Metrics...")
     cursor = conn.cursor()
 

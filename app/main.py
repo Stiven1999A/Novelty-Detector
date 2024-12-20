@@ -1,6 +1,6 @@
 """DETECTOR-DE-NOVEDADES/main.py"""
-import pyodbc
 import time
+import pyodbc
 from dotenv import load_dotenv
 from main_functions.forecasting import predictions_orchestrator
 from main_functions.novelty_detection import detect_atypical_values
@@ -9,7 +9,7 @@ from main_functions.inserting_data import (
     fetch_new_data,
     update_database
 )
-from app.database_tools.connections import (
+from database_tools.connections import (
     connect_to_insert_data,
     connect_to_fetch_data,
     connect_to_insert_forecasting_data
@@ -44,12 +44,9 @@ def main():
             new_data = fetch_new_data(conn_insert, conn_fetch)
             updated_data = update_database(conn_insert, new_data)
             print(detect_atypical_values(conn_insert, updated_data))
-
             if updated_data.empty:
                 print("No new data to update")
                 break
-
-            print("Data updated successfully")
             print("")
             print("Executing Forecasting...")
             predictions_orchestrator(conn_insert, conn_insert_predictions)
