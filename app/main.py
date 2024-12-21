@@ -1,6 +1,5 @@
 """DETECTOR-DE-NOVEDADES/main.py"""
 import time
-import pyodbc
 from dotenv import load_dotenv
 from main_functions.forecasting import predictions_orchestrator
 from main_functions.novelty_detection import detect_atypical_values
@@ -52,7 +51,7 @@ def main():
             predictions_orchestrator(conn_insert, conn_insert_predictions)
             print("Forecasting executed successfully")
             break
-        except (pyodbc.DatabaseError, FileNotFoundError) as e:
+        except FileNotFoundError as e:
             print(f"A database or file error occurred: {e}")
             print("Retrying in 5 seconds...")
             time.sleep(5)

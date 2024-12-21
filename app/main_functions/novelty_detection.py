@@ -175,7 +175,14 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
             print("Detecting atypical values...")
             for id_process in segment['IdProceso'].unique():
                 process_data = segment[segment['IdProceso'] == id_process]
-                daily_segments = [process_data[process_data['IdDiaSemana'] == day] for day in process_data['IdDiaSemana'].unique()]
+                if process_data['IdGrupo'].nunique() > 1:
+                    daily_segments = []
+                    segments_by_group = [process_data[process_data['IdGrupo'] == group] for group in process_data['IdGrupo'].unique()]
+                    for segment_by_group in segments_by_group:
+                        daily_segments_by_group = [segment_by_group[segment_by_group['IdDiaSemana'] == day] for day in segment_by_group['IdDiaSemana'].unique()]
+                        daily_segments.extend(daily_segments_by_group)
+                else:
+                    daily_segments = [process_data[process_data['IdDiaSemana'] == day] for day in process_data['IdDiaSemana'].unique()]
                 for daily_segment in daily_segments:
                     if len(daily_segment) == 1:
                         daily_segment = label_atypical_values(daily_segment, method='MAD', stored_consumptions=process_data['ConsumoMIPS'].tolist())
@@ -213,15 +220,12 @@ def detect_atypical_values(conn_insert, df: pd.DataFrame):
         for id_fecha in sorted(df['IdFecha'].unique()):
             print("Detecting atypical values...")
             data_fecha = df[df['IdFecha'] == id_fecha]
-            id_diasemana = int(data_fecha['IdDiaSemana'].unique())
-            id_processes = sorted(data_fecha['IdProceso'].unique())
-            for id_process in id_processes:
-                new_consumption = data_fecha[data_fecha['IdProceso'] == id_process]
-                if len(new_consumption) > 1:
-                    new_consumption = new_consumption.iloc[0:1].copy()
-                    new_consumption['ConsumoMIPS'] = data_fecha[data_fecha['IdProceso'] == id_process]['ConsumoMIPS'].sum()
-                    new_consumption['Ejecuciones'] = data_fecha[data_fecha['IdProceso'] == id_process]['Ejecuciones'].sum()
-                cursor.execute(f"""SELECT ConsumoMIPS FROM dbo.ConsumosMIPS WHERE IdProceso = {id_process} AND IdDiaSemana = {id_diasemana} AND IdFecha >= {start_id_fecha};""")
+            for _, row in data_fecha.iterrows():
+                id_process = row['IdProceso']
+                id_group = row['IdGrupo']
+                id_diasemana = row['IdDiaSemana']
+                new_consumption = data_fecha[(data_fecha['IdProceso'] == id_process) & (data_fecha['IdGrupo'] == id_group) & (data_fecha['IdDiaSemana'] == id_diasemana)]
+                cursor.execute(f"""SELECT ConsumoMIPS FROM dbo.ConsumosMIPS WHERE IdProceso = {id_process} AND IdGrupo = {id_group} AND IdDiaSemana = {id_diasemana} AND IdFecha >= {start_id_fecha};""")
                 stored_consumptions = [row[0] for row in cursor.fetchall()]
                 if len(stored_consumptions) == 0:
                     new_consumption.loc[:, 'IdAtipico'] = 1
