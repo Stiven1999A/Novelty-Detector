@@ -1,107 +1,147 @@
-# NOVELTY-DETECTOR
+# *NOVELTY-DETECTOR*
 
-### `README.md`
+### *`README.md`*
 
-This README file contains the project documentation. It provides an overview of the project, including its purpose, features, installation instructions, usage guidelines, and any other relevant information to help users understand and use the project effectively.
+*This README file contains the project documentation. It provides an overview of the project, including its purpose, features, installation instructions, usage guidelines, and any other relevant information to help users understand and use the project effectively.*
 
-### Contents
+### *Contents*
 
-1. **Project Overview**: A brief description of the project, its objectives, and its main features.
-2. **Installation Instructions**: Step-by-step instructions on how to install and configure the project.
-3. **Usage Guidelines**: Information on how to use the project, including examples and common use cases.
-4. **Contributions**: Guidelines for contributing to the project, including how to report issues and submit pull requests.
-5. **License**: Information about the project license and any legal considerations.
-6. **Contact Information**: Details on how to contact the project maintainers for support or inquiries.
+1. ***Project Overview**: A brief description of the project, its objectives, and its main features.*
+2. ***Installation Instructions**: Step-by-step instructions on how to install and configure the project.*
+3. ***Usage Guidelines**: Information on how to use the project, including examples and common use cases.*
+4. ***Contributions**: Guidelines for contributing to the project, including how to report issues and submit pull requests.*
+5. ***License**: Information about the project license and any legal considerations.*
+6. ***Contact Information**: Details on how to contact the project maintainers for support or inquiries.*
 
-## Project Overview
-NOVELTY-DETECTOR is a project designed to manage and predict MIPS consumption data. It includes functionalities to create and update database tables, fetch and insert data, and generate forecasts using the Prophet model.
+## *Project Overview*
 
-## Project Structure
+*NOVELTY-DETECTOR is a project designed to manage and predict MIPS consumption data. It includes functionalities to create and update database tables, fetch and insert data, and generate forecasts using the Prophet model.*
+
+## *Project Structure*
 
 ```
-NOVELTY-DETECTOR/
-    ├── .env 
-    ├── .gitignore 
-    ├── database_tools/ 
-        │ ├── init.py 
-        │ ├── pycache/ 
-        │ ├── connections.py 
-        │ ├── create_tables.py 
-        │ ├── delete_tables.py 
-        │ └── update_tables.py 
-    ├── forecast_tools/ 
-        │ ├── init.py 
-        │ ├── pycache/ 
-        │ └── metrics.py
-    ├── scripts/ 
-        | ├── pycache/ 
-        | ├── forecasting.py 
-        | └── insertingdata.py
-    ├── main.py 
-    ├── tests.py 
-    ├── README.md 
+`MIPS-SINCO-ESTADISTICAS/
+    ├── app/
+    	│ ├── database_tools/ 
+        	│ ├── init.py 
+        	│ ├── connections.py 
+        	│ ├── create_tables.py 
+        	│ ├── delete_tables.py 
+        	│ └── update_tables.py 
+    	│ ├── forecast_tools/ 
+        	│ │ ├── init.py 
+        	│ │ └── metrics.py
+    	│ ├── main_functions/ 
+        	│ | ├── init.py
+        	│ | ├── forecasting.py
+		│ | ├── inserting_data.py 
+        	│ | └── novelty_detection.py
+    	│ └── main.py
+
+    ├── charts/
+    	│ ├── templates/ 
+        	│ │ ├── cronjob.yaml
+        	│ │ └── secrets.yaml
+    	│ ├── Chart.yaml
+	│ └── values.yaml
+
+    ├── documentation/
+    	│ ├── Arquitecura_Solucion.drawio.png 
+	│ ├── Diagrama_Necesidad.drawio.png
+    	│ ├── readme.md
+	│ └── Tablas_BD_Destino.drawio.png
+
+    ├── experiment/
+    	│ ├── data/ 
+        	│ ├── input/ 
+        	│ └── output/
+    	│ ├── notebooks/ 
+        	│ │ └── exploratory_analysis.ipynb
+
+    ├── pipeline/
+    	│ ├── main-pipeline.yml
+	│ └── vars_azure_pipeline.yml
+
+    ├── .dockerignore
+    ├── .gitignore
+    ├── catalog-info-yaml
+    ├── docker-compose.yaml
+    ├── Dockerfile
+    ├── mkdocs.yml
     └── requirements.txt 
-
 ```
 
-## Files and Directories
+## *Files and Directories*
 
-### `.env`
-Contains environment variables for the project.
+### *`.env`*
 
-### `.gitignore`
-Specifies files and directories to be ignored by Git.
+*Contains environment variables for the project.*
 
-### `database_tools/`
-Contains scripts to manage database connections and operations.
+### *`.gitignore`*
 
-- **`connections.py`**: Manages database connections.
-- **`create_tables.py`**: Contains the function [`create_tables`](database_tools/create_tables.py) to create the necessary tables in the database.
-- **`delete_tables.py`**: Contains the function [`delete_tables`](database_tools/delete_tables.py) to delete tables from the database.
-- **`update_tables.py`**: Contains functions to update various tables in the database.
+*Specifies files and directories to be ignored by Git.*
 
-### `forecast_tools/`
-Contains tools for forecasting.
+### *`database_tools/`*
 
-- **`metrics.py`**: Contains functions to calculate various forecasting metrics.
+*Contains scripts to manage database connections and operations.*
 
-### `scripts/`
-Contains scripts for forecasting and data insertion.
+- ***`connections.py`**: Manages database connections.*
+- ***`create_tables.py`**: Contains the function [`create_tables`](database_tools/create_tables.py) to create the necessary tables in the database.*
+- ***`delete_tables.py`**: Contains the function [`delete_tables`](database_tools/delete_tables.py) to delete tables from the database.*
+- ***`update_tables.py`**: Contains functions to update various tables in the database.*
 
-- **`forecasting.py`**: Contains the function [`forecast_and_insert`](scripts/forecasting.py) to forecast and insert data into the database.
-- **`insertingdata.py`**: Contains functions to check if tables exist, fetch new data, and update the database.
+### *`forecast_tools/`*
 
-### `main.py`
-The main entry point of the project. Connects to the database, fetches new data, updates the database, labels atypical consumptions, and prints the labeled data. The main function calls several other functions:
-- [`check_tables_exist`](scripts/insertingdata.py)
-- [`fetch_new_data`](scripts/insertingdata.py)
-- [`update_database`](scripts/insertingdata.py)
-- [`predictions_orchestrator`](scripts/forecasting.py)
-- [`label_atypical_consumptions`](database_tools/update_tables.py)
+*Contains tools for forecasting.*
 
-### `tests.py`
-Contains test scripts for the project.
+- ***`metrics.py`**: Contains functions to calculate various forecasting metrics.*
 
-### `requirements.txt`
-Lists the dependencies required for the project.
+### *`scripts/`*
 
-## Usage
+*Contains scripts for forecasting and data insertion.*
 
-### Setup
-1. Clone the repository.
-2. Create a virtual environment and activate it.
-3. Install the dependencies:
-    ```sh
-    pip install -r requirements.txt
-    ```
-4. Configure the environment variables in the `.env` file.
+- ***`forecasting.py`**: Contains the function [`forecast_and_insert`](scripts/forecasting.py) to forecast and insert data into the database.*
+- ***`insertingdata.py`**: Contains functions to check if tables exist, fetch new data, and update the database.*
 
-### Run the Project
-To run the project, execute the `main.py` file:
+### *`main.py`*
+
+*The main entry point of the project. Connects to the database, fetches new data, updates the database, labels atypical consumptions, and prints the labeled data. The main function calls several other functions:*
+
+- [*`check_tables_exist`*](scripts/insertingdata.py)
+- [*`fetch_new_data`*](scripts/insertingdata.py)
+- [*`update_database`*](scripts/insertingdata.py)
+- [*`predictions_orchestrator`*](scripts/forecasting.py)
+- [*`label_atypical_consumptions`*](database_tools/update_tables.py)
+
+### *`tests.py`*
+
+*Contains test scripts for the project.*
+
+### *`requirements.txt`*
+
+*Lists the dependencies required for the project.*
+
+## *Usage*
+
+### *Setup*
+
+1. *Clone the repository.*
+2. *Create a virtual environment and activate it.*
+3. *Install the dependencies:*
+   ```sh
+   pip install -r requirements.txt
+   ```
+4. *Configure the environment variables in the `.env` file.*
+
+### *Run the Project*
+
+*To run the project, execute the `main.py` file:*
+
 ```sh
 python main.py
 ```
-Functions
+
+*Functions
 database_tools/create_tables.py
 create_tables(conn): Creates the necessary tables in the database and inserts initial data.
 scripts/insertingdata.py
@@ -111,7 +151,7 @@ update_database(conn, df): Updates the database with the provided DataFrame.
 scripts/forecasting.py
 forecast_and_insert(max_id_fecha, conn, engine): Forecasts and inserts data into the database.
 Contributions
-Contributions are welcome! Please fork the repository and submit a pull request.
+Contributions are welcome! Please fork the repository and submit a pull request.*
 
-License
-This project is licensed under the MIT License.
+*License
+This project is licensed under the MIT License.*
