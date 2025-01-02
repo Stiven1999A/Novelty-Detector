@@ -1,4 +1,3 @@
-
 **ESTADÍSTICAS DEL CONSUMO DE MIPS.**
 
 **Área:** DevSecOps.
@@ -25,27 +24,28 @@
 
 Tabla de contenido
 
-- [Descripción de la necesidad](#descripción-de-la-necesidad)
+- [Descripción de la necesidad.](#descripción-de-la-necesidad)
 - [Diagrama de la necesidad](#diagrama-de-la-necesidad)
-- [Clasificacion de las Interfaces](#clasificacion-de-las-interfaces)
-- [Atributos de calidad de la solucion](#atributos-de-calidad-de-la-solucion)
-- [Diagrama de componentes de la Interfaz](#diagrama-de-componentes-de-la-interfaz)
-- [Consideraciones](#consideraciones)
-- [Mapeo de datos](#mapeo-de-datos)
-  - [Mapeo Movil_Exito_Bolsillo](#mapeo_movil_exito_bolsillo)
-  - [Mapeo Movil_Exito_Gestores](#mapeo_movil_exito_gestores)
-  - [Mapeo Movil_Exito_Tipoajuste](#mapeo_movil_exito_tipoajuste)
-- [Características técnicas de la Interfaz](#características-técnicas-de-la-interfaz)
-- [Manejo de Errores](#manejo-de-errores)
-- [Manejo de reproceso](#manejo-de-reproceso)
-- [Manual de despliegue](#manual-de-despliegue)
+- [Descripción de la Solución.](#descripción-de-la-solución)
+- [Arquitectura de la Solución.](#arquitectura-de-la-solución)
+- [Estructura del Repositorio con el Desarrollo de la Solución.](#estructura-del-repositorio-con-el-desarrollo-de-la-solución)
+- [Descripción de las Carpetas y Archivos](#descripción-de-las-carpetas-y-archivos)
+  - [app/](#app)
+  - [charts/](#charts)
+  - [documentation/](#documentation)
+  - [experiment/](#experiment)
+  - [pipeline/](#pipeline)
+  - [Archivos en el directorio raíz](#archivos-en-el-directorio-raíz)
+- [Uso](#uso)
+  - [Configuración](#configuración)
+  - [Ejecutar el Proyecto](#ejecutar-el-proyecto)
 
 * [Inventario de Artefactos](#inventario-de-artefactos)
 * [Topologías](#topologías)
 * [Directorios](#directorios)
 * [Operaciones de la Interfaz (Servicio)](#Operaciones-de-la-Interfaz-(Servicio))
 
-#### Descripción de la necesidad.
+### Descripción de la necesidad.
 
 En el año 2020, el Grupo Éxito firmó un contrato con Unisys, un proveedor de tecnología, para renovar la plataforma ClearPath, que soporta el sistema SINCO (Sistema de Información Comercial), el CORE comercial de la compañía. Este contrato, con una duración de 84 meses, incluyó una asignación de 284.000 MIPS (Million Instructions Per Second), una métrica que mide el procesamiento de las operaciones que pasan por el ClearPath. Cada unidad de MIPS tiene un costo de \$95 USD, lo que sitúa el valor total del contrato en aproximadamente 26.9 millones de dólares.
 
@@ -61,23 +61,23 @@ Dado que el contrato con Unisys tiene un número limitado de MIPS para consumir,
 | **Porqué**                | - Porque los análisis de novedades se hacen de manera manual, lo que consume energía y tiempo<br /> que puede ser invertido en tareas de mayor prioridad sin descuidar el monitoreo del consumo de MIPS. <br />- Porque la simple intuición y las proyecciones usando aritmética son poco fiables a la hora de predecir<br /> los consumos, especialmente si el periodo de tiempo hacía adelante que se quiere predecir es grande. |
 | **Para qué**              | - Para que los equipos de Infraestructura y Operaciones tengan acceso a las novedades diarias de forma<br />entendible, simple, concisa y fiable haciendo sus operaciones más agiles.<br />- Asimismo, para que los equipos tenga una idea del comportamiento futuro de los consumos basandose<br />en un modelo de Machine Learning de confianza.                                                                                       |
 
-#### Diagrama de la necesidad
+### Diagrama de la necesidad
 
 ![Diagrama](./Diagrama_Necesidad.drawio.png)
 
-#### Descripción de la Solución.
+### Descripción de la Solución.
 
 El objetivo es desarrollar e implementar dos modelos analíticos que se ejecuten automáticamente en los sistemas productivos del Grupo Éxito y generen reportes diarios. El primer modelo estará enfocado en detectar procesos con consumos de MIPS anómalos, aplicando la metodología del **rango intercuartílico** cuando los consumos, agrupados por proceso y día de la semana, presenten una distribución normal, y la metodología de la **desviación absoluta mediana** en caso contrario. El segundo modelo, por su parte, estará diseñado para predecir el consumo total de MIPS, asegurando que las métricas de error (MAE, MAPE, RMSE y sMAPE) se mantengan por debajo del 10 \%.
 
 ![Diagrama](https://vscode-remote+wsl-002bubuntu-002d22-002e04.vscode-resource.vscode-cdn.net/home/mips-sinco-estadisticas/documentation/Tablas_BD_Destino.drawio.png)
 
-#### Arquitectura de la Solución.
+### Arquitectura de la Solución.
 
 En el siguiente diagrama de componentes se muestra el diseño de la integración y la relación con los diferentes componentes:
 
 ![Diagrama](./Arquitectura_Solucion.drawio.png)
 
-#### Estructura del Repositorio con el Desarrollo de la Solución.
+### Estructura del Repositorio con el Desarrollo de la Solución.
 
 ```apache
 
@@ -131,4 +131,83 @@ En el siguiente diagrama de componentes se muestra el diseño de la integración
     ├── mkdocs.yml
     └── requirements.txt 
 
+```
+
+### Descripción de las Carpetas y Archivos
+
+#### app/
+
+* **database_tools/**
+  * **init.py** : Inicializa el módulo de herramientas de base de datos.
+  * **connections.py** : Gestiona las conexiones a la base de datos.
+  * **create_tables.py** : Contiene funciones para crear tablas en la base de datos.
+  * **delete_tables.py** : Contiene funciones para eliminar tablas en la base de datos.
+  * **update_tables.py** : Contiene funciones para actualizar tablas en la base de datos.
+* **forecast_tools/**
+  * **init.py** : Inicializa el módulo de herramientas de pronóstico.
+  * **metrics.py** : Contiene funciones para calcular varias métricas de precisión del pronóstico.
+* **main_functions/**
+  * **init.py** : Inicializa el módulo de funciones principales.
+  * **forecasting.py** : Contiene funciones para el pronóstico de datos.
+  * **inserting_data.py** : Contiene funciones para insertar datos en la base de datos.
+  * **novelty_detection.py** : Contiene funciones para detectar patrones novedosos en los datos.
+* **main.py** : El punto de entrada principal de la aplicación.
+
+#### charts/
+
+* **templates/**
+  * **cronjob.yaml** : Configuración para un trabajo cron.
+  * **secrets.yaml** : Configuración para la gestión de secretos.
+* **Chart.yaml** : Archivo de configuración del gráfico de Helm.
+* **values.yaml** : Valores predeterminados para el gráfico de Helm.
+
+#### documentation/
+
+* **Arquitecura_Solucion.drawio.png** : Diagrama de la arquitectura de la solución.
+* **Diagrama_Necesidad.drawio.png** : Diagrama de los requisitos.
+* **readme.md** : Documentación e instrucciones para el proyecto.
+* **Tablas_BD_Destino.drawio.png** : Diagrama de las tablas de la base de datos de destino.
+
+#### experiment/
+
+* **data/**
+  * **input/** : Directorio para datos de entrada.
+  * **output/** : Directorio para datos de salida.
+* **notebooks/**
+  * **exploratory_analysis.ipynb** : Cuaderno Jupyter para el análisis exploratorio de datos.
+
+#### pipeline/
+
+* **main-pipeline.yml** : Archivo de configuración del pipeline principal.
+* **vars_azure_pipeline.yml** : Variables para el pipeline de Azure.
+
+#### Archivos en el directorio raíz
+
+* **.dockerignore** : Especifica archivos y directorios a ignorar en las construcciones de Docker.
+* **.gitignore** : Especifica archivos y directorios a ignorar en Git.
+* **catalog-info.yaml** : Archivo de información del catálogo.
+* **docker-compose.yaml** : Archivo de configuración de Docker Compose.
+* **Dockerfile** : Instrucciones para construir una imagen de Docker.
+* **mkdocs.yml** : Archivo de configuración para la documentación con MkDocs.
+* **requirements.txt** : Lista de dependencias de Python para el proyecto.
+
+### Uso
+
+#### Configuración
+
+1. Clona el repositorio.
+2. Crea un entorno virtual y actívalo.
+3. Instala las dependencias:
+
+   ```powershell
+   pip install -r requirements.txt
+   ```
+4. Configura las variables de entorno en un archivo .env.
+
+#### Ejecutar el Proyecto
+
+Para ejecutar el proyecto, ejecuta el archivo main.py:
+
+```powershell
+   python3 main.py
 ```

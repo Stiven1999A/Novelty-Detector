@@ -19,43 +19,43 @@
 
 ## *Project Structure*
 
-```
+```apache
 `MIPS-SINCO-ESTADISTICAS/
     ├── app/
-    	│ ├── database_tools/ 
-        	│ ├── init.py 
-        	│ ├── connections.py 
-        	│ ├── create_tables.py 
-        	│ ├── delete_tables.py 
-        	│ └── update_tables.py 
-    	│ ├── forecast_tools/ 
-        	│ │ ├── init.py 
+    	│ ├── database_tools/
+        	│ ├── init.py
+        	│ ├── connections.py
+        	│ ├── create_tables.py
+        	│ ├── delete_tables.py
+        	│ └── update_tables.py
+    	│ ├── forecast_tools/
+        	│ │ ├── init.py
         	│ │ └── metrics.py
-    	│ ├── main_functions/ 
+    	│ ├── main_functions/
         	│ | ├── init.py
         	│ | ├── forecasting.py
-		│ | ├── inserting_data.py 
+		│ | ├── inserting_data.py
         	│ | └── novelty_detection.py
     	│ └── main.py
 
     ├── charts/
-    	│ ├── templates/ 
+    	│ ├── templates/
         	│ │ ├── cronjob.yaml
         	│ │ └── secrets.yaml
     	│ ├── Chart.yaml
 	│ └── values.yaml
 
     ├── documentation/
-    	│ ├── Arquitecura_Solucion.drawio.png 
+    	│ ├── Arquitecura_Solucion.drawio.png
 	│ ├── Diagrama_Necesidad.drawio.png
     	│ ├── readme.md
 	│ └── Tablas_BD_Destino.drawio.png
 
     ├── experiment/
-    	│ ├── data/ 
-        	│ ├── input/ 
+    	│ ├── data/
+        	│ ├── input/
         	│ └── output/
-    	│ ├── notebooks/ 
+    	│ ├── notebooks/
         	│ │ └── exploratory_analysis.ipynb
 
     ├── pipeline/
@@ -68,7 +68,7 @@
     ├── docker-compose.yaml
     ├── Dockerfile
     ├── mkdocs.yml
-    └── requirements.txt 
+    └── requirements.txt
 ```
 
 ## *Files and Directories*
@@ -131,6 +131,7 @@
    ```sh
    pip install -r requirements.txt
    ```
+
 4. *Configure the environment variables in the `.env` file.*
 
 ### *Run the Project*
@@ -141,7 +142,8 @@
 python main.py
 ```
 
-*Functions
+
+Functions
 database_tools/create_tables.py
 create_tables(conn): Creates the necessary tables in the database and inserts initial data.
 scripts/insertingdata.py
@@ -151,7 +153,7 @@ update_database(conn, df): Updates the database with the provided DataFrame.
 scripts/forecasting.py
 forecast_and_insert(max_id_fecha, conn, engine): Forecasts and inserts data into the database.
 Contributions
-Contributions are welcome! Please fork the repository and submit a pull request.*
+Contributions are welcome! Please fork the repository and submit a pull request.
 
 *License
 This project is licensed under the MIT License.*
